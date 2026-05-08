@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Phone Detection Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0b10;
+            --panel-color: #161821;
+            --accent-color: #6366f1;
+            --alert-color: #ef4444;
+            --success-color: #10b981;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            background: var(--panel-color);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-color), #818cf8);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .status-active .status-dot {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        main {
+            padding: 2rem;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        .monitor-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .video-container {
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            position: relative;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas, video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .overlay-alert {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(to bottom, rgba(239, 68, 68, 0.8), transparent);
+            color: white;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: none;
+            z-index: 10;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            background: var(--panel-color);
+            padding: 1rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-primary:hover { background: #4f46e5; transform: translateY(-2px); }
+        .btn-outline { background: transparent; color: var(--text-primary); border: 1px solid var(--glass-border); }
+        .btn-outline:hover { background: var(--glass); }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--panel-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .alert-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .alert-item {
+            padding: 1rem;
+            border-radius: 12px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            margin-bottom: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            border-left: 4px solid var(--alert-color);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .alert-time { font-size: 0.75rem; color: var(--text-secondary); }
+        .alert-msg { font-size: 0.875rem; font-weight: 600; color: #fca5a5; }
+
+        .config-group {
+            margin-bottom: 1rem;
+        }
+
+        .config-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-color);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">📱</div>
+            <span>DroidGuard AI</span>
+        </div>
+        <div id="connectionStatus" class="status-badge">
+            <div class="status-dot"></div>
+            <span>Connecting to API...</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="monitor-section">
+            <div class="video-container">
+                <div id="alertOverlay" class="overlay-alert">⚠ PHONE DETECTED - SUSPICIOUS ACTIVITY ⚠</div>
+                <video id="webcam" autoplay playsinline style="display:none;"></video>
+                <canvas id="outputCanvas"></canvas>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn" class="btn btn-primary">Start Monitoring</button>
+                <button id="stopBtn" class="btn btn-outline" disabled>Stop</button>
+                <button id="resetTrackerBtn" class="btn btn-outline">Reset Tracker</button>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
+                    <span id="fpsDisplay" style="font-weight: 600; color: var(--text-secondary);">FPS: 0</span>
+                </div>
+            </div>
+        </section>
+
+        <aside class="sidebar">
+            <div class="card">
+                <div class="card-title">Live Confidence</div>
+                <div id="confValue" class="metric-value">0%</div>
+                <div id="confBar" style="width: 100%; height: 8px; background: var(--glass); border-radius: 4px; overflow: hidden;">
+                    <div id="confFill" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.2s;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Alert History</div>
+                <ul id="alertList" class="alert-list">
+                    <!-- Alerts will appear here -->
+                    <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">No alerts recorded</div>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Configuration</div>
+                <div class="config-group">
+                    <label>Detection Threshold: <span id="threshLabel">0.40</span></label>
+                    <input type="range" id="threshRange" min="0.1" max="0.9" step="0.05" value="0.40">
+                </div>
+                <div class="config-group">
+                    <label>Processing Interval: 150ms</label>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetTrackerBtn');
+        const threshRange = document.getElementById('threshRange');
+        const threshLabel = document.getElementById('threshLabel');
+        const alertOverlay = document.getElementById('alertOverlay');
+        const alertList = document.getElementById('alertList');
+        const confValue = document.getElementById('confValue');
+        const confFill = document.getElementById('confFill');
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const statusBadge = document.getElementById('connectionStatus');
+
+        let isMonitoring = false;
+        let stream = null;
+        let frameCount = 0;
+        let lastTime = performance.now();
+        let processingTimer = null;
+
+        // Initialize UI
+        threshRange.oninput = () => threshLabel.innerText = threshRange.value;
+
+        // Check API Status
+        async function checkAPI() {
+            try {
+                const res = await fetch(`${API_URL}/status`);
+                if (res.ok) {
+                    statusBadge.classList.add('status-active');
+                    statusBadge.querySelector('span').innerText = 'API Online';
+                }
+            } catch (e) {
+                statusBadge.classList.remove('status-active');
+                statusBadge.querySelector('span').innerText = 'API Offline';
+            }
+        }
+        setInterval(checkAPI, 5000);
+        checkAPI();
+
+        async function startMonitoring() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    isMonitoring = true;
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    processLoop();
+                };
+            } catch (err) {
+                alert('Webcam access denied: ' + err.message);
+            }
+        }
+
+        function stopMonitoring() {
+            isMonitoring = false;
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            clearTimeout(processingTimer);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        async function processLoop() {
+            if (!isMonitoring) return;
+
+            // Draw current video frame to hidden canvas to get base64
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Frame = canvas.toDataURL('image/jpeg', 0.7);
+
+            try {
+                const response = await fetch(`${API_URL}/detect-frame`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        frame: base64Frame,
+                        confidence: parseFloat(threshRange.value),
+                        frame_id: frameCount++
+                    })
+                });
+
+                const result = await response.json();
+                updateUI(result);
+            } catch (err) {
+                console.error('Processing error:', err);
+            }
+
+            // Calculate FPS
+            const now = performance.now();
+            const delta = now - lastTime;
+            lastTime = now;
+            fpsDisplay.innerText = `FPS: ${Math.round(1000/delta)}`;
+
+            processingTimer = setTimeout(processLoop, 150); // 150ms delay between frames
+        }
+
+        function updateUI(result) {
+            // Confidence display
+            const conf = Math.round(result.confidence * 100);
+            confValue.innerText = `${conf}%`;
+            confFill.style.width = `${conf}%`;
+            confFill.style.background = result.alert_active ? 'var(--alert-color)' : 'var(--accent-color)';
+
+            // Alert Overlay
+            alertOverlay.style.display = result.alert_active ? 'block' : 'none';
+
+            // Detections Drawing
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            result.detections.forEach(det => {
+                const [x1, y1, x2, y2] = det.bbox;
+                ctx.strokeStyle = result.alert_active ? '#ef4444' : '#6366f1';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                
+                ctx.fillStyle = result.alert_active ? '#ef4444' : '#6366f1';
+                ctx.fillRect(x1, y1 - 25, 100, 25);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Outfit';
+                ctx.fillText(`Phone: ${Math.round(det.confidence*100)}%`, x1 + 5, y1 - 7);
+            });
+
+            // If alert active and not in list recently
+            if (result.alert_active) {
+                addAlertToList(result.timestamp, conf);
+            }
+        }
+
+        let lastAlertTime = 0;
+        function addAlertToList(timeStr, conf) {
+            const now = Date.now();
+            if (now - lastAlertTime < 5000) return; // Cooldown 5s in UI
+            lastAlertTime = now;
+
+            if (alertList.innerHTML.includes('No alerts recorded')) alertList.innerHTML = '';
+
+            const item = document.createElement('li');
+            item.className = 'alert-item';
+            item.innerHTML = `
+                <div class="alert-time">${new Date().toLocaleTimeString()}</div>
+                <div class="alert-msg">Mobile Phone Detected (${conf}%)</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary)">Persistence threshold reached</div>
+            `;
+            alertList.prepend(item);
+            
+            // Keep only last 10
+            if (alertList.children.length > 10) alertList.removeChild(alertList.lastChild);
+        }
+
+        resetBtn.onclick = async () => {
+            await fetch(`${API_URL}/reset-tracker`, { method: 'POST' });
+            alertList.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Tracker reset</div>';
+        };
+
+        startBtn.onclick = startMonitoring;
+        stopBtn.onclick = stopMonitoring;
+    </script>
+</body>
+</html>

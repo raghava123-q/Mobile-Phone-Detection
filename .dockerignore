@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+*.md
+outputs/*.mp4
+outputs/*.csv
+outputs/*.json
+outputs/*.jpg
+logs/*.log
+videos/*.mp4
+models/*.pt
+.env
+.vscode/
+.idea/

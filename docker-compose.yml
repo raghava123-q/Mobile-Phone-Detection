@@ -1,0 +1,25 @@
+# ==============================================================
+# Docker Compose - Mobile Phone Detection System
+# ==============================================================
+
+version: "3.8"
+
+services:
+  phone-detector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phone-detection-api
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./videos:/app/videos
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G

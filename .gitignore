@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# YOLOv8 model weights (auto-downloaded)
+models/*.pt
+*.pt
+
+# Output files (generated at runtime)
+outputs/*.mp4
+outputs/*.csv
+outputs/*.json
+outputs/*.jpg
+
+# Logs
+logs/*.log
+
+# Test videos (generated)
+videos/*.mp4
+videos/*.jpg
+
+# OS
+Thumbs.db
+.DS_Store

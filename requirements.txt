@@ -1,0 +1,30 @@
+# ==============================================================
+# Mobile Phone Detection System - Requirements
+# YOLOv8 + OpenCV + Flask API
+# ==============================================================
+
+# Core ML / Deep Learning
+ultralytics>=8.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Computer Vision
+opencv-python>=4.8.0
+opencv-contrib-python>=4.8.0
+
+# Scientific Computing
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Web API
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Utilities
+Pillow>=10.0.0
+tqdm>=4.65.0
+colorama>=0.4.6
+python-dotenv>=1.0.0
+
+# Logging & Reporting
+pandas>=2.0.0
