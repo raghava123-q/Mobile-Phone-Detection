@@ -395,8 +395,20 @@
         let isMonitoring = false;
         let stream = null;
         let frameCount = 0;
-        let lastTime = performance.now();
-        let processingTimer = null;
+        let lastFpsTime = performance.now();
+        let fpsFrameCount = 0;
+        let renderAnimId = null;
+        let detectTimer = null;
+        let isDetecting = false;
+
+        // Cache for last detection result (drawn as overlay on every render frame)
+        let lastDetections = [];
+        let lastAlertActive = false;
+        let lastConfidence = 0;
+
+        // Offscreen canvas for capturing frames to send to API (doesn't affect display)
+        const offCanvas = document.createElement('canvas');
+        const offCtx = offCanvas.getContext('2d');
 
         // Initialize UI
         threshRange.oninput = () => threshLabel.innerText = threshRange.value;
@@ -436,10 +448,17 @@
                 video.onloadedmetadata = () => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
+                    offCanvas.width = video.videoWidth;
+                    offCanvas.height = video.videoHeight;
                     isMonitoring = true;
                     startBtn.disabled = true;
                     stopBtn.disabled = false;
-                    processLoop();
+                    lastDetections = [];
+                    lastAlertActive = false;
+                    lastConfidence = 0;
+                    // Start two independent loops
+                    renderLoop();
+                    detectLoop();
                 };
             } catch (err) {
                 alert('Webcam access denied: ' + err.message);
@@ -451,72 +470,110 @@
             if (stream) stream.getTracks().forEach(t => t.stop());
             startBtn.disabled = false;
             stopBtn.disabled = true;
-            clearTimeout(processingTimer);
+            if (renderAnimId) cancelAnimationFrame(renderAnimId);
+            if (detectTimer) clearTimeout(detectTimer);
+            renderAnimId = null;
+            detectTimer = null;
+            isDetecting = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        async function processLoop() {
+        // ─── RENDER LOOP (60fps, smooth) ───
+        function renderLoop() {
             if (!isMonitoring) return;
 
-            // Draw current video frame to hidden canvas to get base64
+            // Draw live webcam feed
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const base64Frame = canvas.toDataURL('image/jpeg', 0.7);
 
-            try {
-                const response = await fetch(`${API_URL}/detect-frame`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        frame: base64Frame,
-                        confidence: parseFloat(threshRange.value),
-                        frame_id: frameCount++
-                    })
+            // Draw cached detection overlays on top
+            if (lastDetections.length > 0) {
+                lastDetections.forEach(det => {
+                    const [x1, y1, x2, y2] = det.bbox;
+                    const color = lastAlertActive ? '#ef4444' : '#6366f1';
+
+                    // Bounding box
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                    // Label background
+                    const label = `Phone: ${Math.round(det.confidence * 100)}%`;
+                    ctx.font = 'bold 14px Outfit';
+                    const textWidth = ctx.measureText(label).width + 12;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x1, y1 - 26, textWidth, 26);
+
+                    // Label text
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(label, x1 + 6, y1 - 8);
                 });
-
-                const result = await response.json();
-                updateUI(result);
-            } catch (err) {
-                console.error('Processing error:', err);
             }
 
-            // Calculate FPS
+            // FPS counter (smoothed over multiple frames)
+            fpsFrameCount++;
             const now = performance.now();
-            const delta = now - lastTime;
-            lastTime = now;
-            fpsDisplay.innerText = `FPS: ${Math.round(1000 / delta)}`;
+            if (now - lastFpsTime >= 500) {
+                const fps = Math.round((fpsFrameCount * 1000) / (now - lastFpsTime));
+                fpsDisplay.innerText = `FPS: ${fps}`;
+                fpsFrameCount = 0;
+                lastFpsTime = now;
+            }
 
-            processingTimer = setTimeout(processLoop, 150); // 150ms delay between frames
+            renderAnimId = requestAnimationFrame(renderLoop);
         }
 
-        function updateUI(result) {
-            // Confidence display
-            const conf = Math.round(result.confidence * 100);
-            confValue.innerText = `${conf}%`;
-            confFill.style.width = `${conf}%`;
-            confFill.style.background = result.alert_active ? 'var(--alert-color)' : 'var(--accent-color)';
+        // ─── DETECTION LOOP (background, non-blocking) ───
+        async function detectLoop() {
+            if (!isMonitoring) return;
 
-            // Alert Overlay
-            alertOverlay.style.display = result.alert_active ? 'block' : 'none';
+            // Don't stack requests — skip if previous detection is still in-flight
+            if (!isDetecting) {
+                isDetecting = true;
 
-            // Detections Drawing
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            result.detections.forEach(det => {
-                const [x1, y1, x2, y2] = det.bbox;
-                ctx.strokeStyle = result.alert_active ? '#ef4444' : '#6366f1';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                try {
+                    // Capture frame on offscreen canvas (no flicker on display)
+                    offCtx.drawImage(video, 0, 0, offCanvas.width, offCanvas.height);
+                    const base64Frame = offCanvas.toDataURL('image/jpeg', 0.6);
 
-                ctx.fillStyle = result.alert_active ? '#ef4444' : '#6366f1';
-                ctx.fillRect(x1, y1 - 25, 100, 25);
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 14px Outfit';
-                ctx.fillText(`Phone: ${Math.round(det.confidence * 100)}%`, x1 + 5, y1 - 7);
-            });
+                    const response = await fetch(`${API_URL}/detect-frame`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            frame: base64Frame,
+                            confidence: parseFloat(threshRange.value),
+                            frame_id: frameCount++
+                        })
+                    });
 
-            // If alert active and not in list recently
-            if (result.alert_active) {
-                addAlertToList(result.timestamp, conf);
+                    const result = await response.json();
+
+                    // Cache results for the render loop to draw
+                    lastDetections = result.detections || [];
+                    lastAlertActive = result.alert_active || false;
+                    lastConfidence = result.confidence || 0;
+
+                    // Update sidebar UI
+                    const conf = Math.round(lastConfidence * 100);
+                    confValue.innerText = `${conf}%`;
+                    confFill.style.width = `${conf}%`;
+                    confFill.style.background = lastAlertActive ? 'var(--alert-color)' : 'var(--accent-color)';
+                    alertOverlay.style.display = lastAlertActive ? 'block' : 'none';
+
+                    if (lastAlertActive) {
+                        addAlertToList(result.timestamp, conf);
+                    }
+                } catch (err) {
+                    // API unreachable — clear overlays so video stays clean
+                    lastDetections = [];
+                    lastAlertActive = false;
+                    alertOverlay.style.display = 'none';
+                }
+
+                isDetecting = false;
             }
+
+            // Schedule next detection (300ms between sends)
+            detectTimer = setTimeout(detectLoop, 300);
         }
 
         let lastAlertTime = 0;
