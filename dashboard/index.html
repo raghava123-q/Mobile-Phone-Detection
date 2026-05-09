@@ -90,6 +90,11 @@
             animation: pulse 2s infinite;
         }
 
+        .status-offline .status-dot {
+            background: var(--alert-color);
+            box-shadow: 0 0 10px var(--alert-color);
+        }
+
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.5); opacity: 0.5; }
@@ -343,13 +348,20 @@
         // Check API Status
         async function checkAPI() {
             try {
-                const res = await fetch(`${API_URL}/status`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                const res = await fetch(`${API_URL}/status`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (res.ok) {
                     statusBadge.classList.add('status-active');
+                    statusBadge.classList.remove('status-offline');
                     statusBadge.querySelector('span').innerText = 'API Online';
+                } else {
+                    throw new Error('API returned non-OK status');
                 }
             } catch (e) {
                 statusBadge.classList.remove('status-active');
+                statusBadge.classList.add('status-offline');
                 statusBadge.querySelector('span').innerText = 'API Offline';
             }
         }
