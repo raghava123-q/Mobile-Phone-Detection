@@ -360,7 +360,7 @@ MIN_BBOX_AREA = 1500           # False positive filter (px²)
 
 ## 🌐 Browser Dashboard
 
-Open `dashboard/index.html` in a browser while the API is running to access the **DroidGuard AI** dashboard:
+Open `dashboard/index.html` in a browser while the API is running to access the **Mobile Phone Detection** dashboard:
 
 - **Live webcam monitoring** via browser
 - **Real-time detection overlay** with bounding boxes

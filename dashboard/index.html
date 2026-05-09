@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Phone Detection Dashboard</title>
+    <title>Mobile Phone Detection Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -96,9 +97,20 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         main {
@@ -128,7 +140,8 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        canvas, video {
+        canvas,
+        video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -171,10 +184,25 @@
             gap: 0.5rem;
         }
 
-        .btn-primary { background: var(--accent-color); color: white; }
-        .btn-primary:hover { background: #4f46e5; transform: translateY(-2px); }
-        .btn-outline { background: transparent; color: var(--text-primary); border: 1px solid var(--glass-border); }
-        .btn-outline:hover { background: var(--glass); }
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-outline:hover {
+            background: var(--glass);
+        }
 
         .sidebar {
             display: flex;
@@ -231,12 +259,27 @@
         }
 
         @keyframes slideIn {
-            from { transform: translateX(20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
-        .alert-time { font-size: 0.75rem; color: var(--text-secondary); }
-        .alert-msg { font-size: 0.875rem; font-weight: 600; color: #fca5a5; }
+        .alert-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .alert-msg {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #fca5a5;
+        }
 
         .config-group {
             margin-bottom: 1rem;
@@ -254,20 +297,30 @@
             accent-color: var(--accent-color);
         }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 10px;
+        }
     </style>
 </head>
+
 <body>
     <header>
         <div class="logo">
             <div class="logo-icon">📱</div>
-            <span>DroidGuard AI</span>
+            <span>Mobile Phone Detection</span>
         </div>
-        <div id="connectionStatus" class="status-badge">
+        <div id="connectionStatus" class="status-badge status-offline">
             <div class="status-dot"></div>
-            <span>Connecting to API...</span>
+            <span>API Offline</span>
         </div>
     </header>
 
@@ -293,8 +346,10 @@
             <div class="card">
                 <div class="card-title">Live Confidence</div>
                 <div id="confValue" class="metric-value">0%</div>
-                <div id="confBar" style="width: 100%; height: 8px; background: var(--glass); border-radius: 4px; overflow: hidden;">
-                    <div id="confFill" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.2s;"></div>
+                <div id="confBar"
+                    style="width: 100%; height: 8px; background: var(--glass); border-radius: 4px; overflow: hidden;">
+                    <div id="confFill"
+                        style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.2s;"></div>
                 </div>
             </div>
 
@@ -302,7 +357,8 @@
                 <div class="card-title">Alert History</div>
                 <ul id="alertList" class="alert-list">
                     <!-- Alerts will appear here -->
-                    <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">No alerts recorded</div>
+                    <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">No alerts recorded
+                    </div>
                 </ul>
             </div>
 
@@ -345,25 +401,29 @@
         // Initialize UI
         threshRange.oninput = () => threshLabel.innerText = threshRange.value;
 
-        // Check API Status
-        async function checkAPI() {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
-                const res = await fetch(`${API_URL}/status`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (res.ok) {
-                    statusBadge.classList.add('status-active');
-                    statusBadge.classList.remove('status-offline');
+        // Check API Status using XMLHttpRequest for reliable offline detection
+        function checkAPI() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `${API_URL}/status`, true);
+            xhr.timeout = 3000;
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    statusBadge.className = 'status-badge status-active';
                     statusBadge.querySelector('span').innerText = 'API Online';
                 } else {
-                    throw new Error('API returned non-OK status');
+                    statusBadge.className = 'status-badge status-offline';
+                    statusBadge.querySelector('span').innerText = 'API Offline';
                 }
-            } catch (e) {
-                statusBadge.classList.remove('status-active');
-                statusBadge.classList.add('status-offline');
+            };
+            xhr.onerror = function () {
+                statusBadge.className = 'status-badge status-offline';
                 statusBadge.querySelector('span').innerText = 'API Offline';
-            }
+            };
+            xhr.ontimeout = function () {
+                statusBadge.className = 'status-badge status-offline';
+                statusBadge.querySelector('span').innerText = 'API Offline';
+            };
+            xhr.send();
         }
         setInterval(checkAPI, 5000);
         checkAPI();
@@ -372,7 +432,7 @@
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
                 video.srcObject = stream;
-                
+
                 video.onloadedmetadata = () => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
@@ -423,7 +483,7 @@
             const now = performance.now();
             const delta = now - lastTime;
             lastTime = now;
-            fpsDisplay.innerText = `FPS: ${Math.round(1000/delta)}`;
+            fpsDisplay.innerText = `FPS: ${Math.round(1000 / delta)}`;
 
             processingTimer = setTimeout(processLoop, 150); // 150ms delay between frames
         }
@@ -445,12 +505,12 @@
                 ctx.strokeStyle = result.alert_active ? '#ef4444' : '#6366f1';
                 ctx.lineWidth = 4;
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-                
+
                 ctx.fillStyle = result.alert_active ? '#ef4444' : '#6366f1';
                 ctx.fillRect(x1, y1 - 25, 100, 25);
                 ctx.fillStyle = 'white';
                 ctx.font = 'bold 14px Outfit';
-                ctx.fillText(`Phone: ${Math.round(det.confidence*100)}%`, x1 + 5, y1 - 7);
+                ctx.fillText(`Phone: ${Math.round(det.confidence * 100)}%`, x1 + 5, y1 - 7);
             });
 
             // If alert active and not in list recently
@@ -475,7 +535,7 @@
                 <div style="font-size: 0.75rem; color: var(--text-secondary)">Persistence threshold reached</div>
             `;
             alertList.prepend(item);
-            
+
             // Keep only last 10
             if (alertList.children.length > 10) alertList.removeChild(alertList.lastChild);
         }
@@ -489,4 +549,5 @@
         stopBtn.onclick = stopMonitoring;
     </script>
 </body>
+
 </html>
