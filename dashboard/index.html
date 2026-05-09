@@ -204,6 +204,16 @@
             background: var(--glass);
         }
 
+        .btn-danger {
+            background: var(--alert-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -338,6 +348,7 @@
                 <button id="resetTrackerBtn" class="btn btn-outline">Reset Tracker</button>
                 <div style="margin-left: auto; display: flex; align-items: center; gap: 1rem;">
                     <span id="fpsDisplay" style="font-weight: 600; color: var(--text-secondary);">FPS: 0</span>
+                    <button id="shutdownBtn" class="btn btn-danger">⏻ Stop Server</button>
                 </div>
             </div>
         </section>
@@ -600,6 +611,21 @@
         resetBtn.onclick = async () => {
             await fetch(`${API_URL}/reset-tracker`, { method: 'POST' });
             alertList.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Tracker reset</div>';
+        };
+
+        // Shutdown server button
+        document.getElementById('shutdownBtn').onclick = async () => {
+            if (!confirm('Stop the backend server? You will need to restart app.py manually.')) return;
+            try {
+                await fetch(`${API_URL}/shutdown`, { method: 'POST' });
+                stopMonitoring();
+                statusBadge.className = 'status-badge status-offline';
+                statusBadge.querySelector('span').innerText = 'Server Stopped';
+            } catch (e) {
+                // Server already killed
+                statusBadge.className = 'status-badge status-offline';
+                statusBadge.querySelector('span').innerText = 'Server Stopped';
+            }
         };
 
         startBtn.onclick = startMonitoring;

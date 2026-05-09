@@ -373,6 +373,29 @@ def reset_tracker():
     })
 
 
+@app.route("/shutdown", methods=["POST"])
+def shutdown():
+    """
+    POST /shutdown
+    Gracefully stop the Flask API server.
+    Used by the dashboard 'Stop Server' button.
+    """
+    import os
+    import threading
+
+    logger.info("Shutdown requested via API — stopping server...")
+
+    def _shutdown():
+        time.sleep(0.5)  # Let the response send first
+        os._exit(0)
+
+    threading.Thread(target=_shutdown, daemon=True).start()
+    return jsonify({
+        "message": "Server shutting down...",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    })
+
+
 @app.route("/export-csv", methods=["GET"])
 def export_csv():
     """
