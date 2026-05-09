@@ -376,8 +376,8 @@
             <div class="card">
                 <div class="card-title">Configuration</div>
                 <div class="config-group">
-                    <label>Detection Threshold: <span id="threshLabel">0.40</span></label>
-                    <input type="range" id="threshRange" min="0.1" max="0.9" step="0.05" value="0.40">
+                    <label>Detection Threshold: <span id="threshLabel">0.25</span></label>
+                    <input type="range" id="threshRange" min="0.1" max="0.9" step="0.05" value="0.25">
                 </div>
                 <div class="config-group">
                     <label>Processing Interval: 150ms</label>
@@ -500,7 +500,7 @@
             if (lastDetections.length > 0) {
                 lastDetections.forEach(det => {
                     const [x1, y1, x2, y2] = det.bbox;
-                    const color = lastAlertActive ? '#ef4444' : '#6366f1';
+                    const color = '#ef4444'; // Always red for phone detection
 
                     // Bounding box
                     ctx.strokeStyle = color;
@@ -563,14 +563,17 @@
                     lastAlertActive = result.alert_active || false;
                     lastConfidence = result.confidence || 0;
 
+                    // Phone detected = show warning immediately
+                    const phoneVisible = lastDetections.length > 0;
+
                     // Update sidebar UI
                     const conf = Math.round(lastConfidence * 100);
                     confValue.innerText = `${conf}%`;
                     confFill.style.width = `${conf}%`;
-                    confFill.style.background = lastAlertActive ? 'var(--alert-color)' : 'var(--accent-color)';
-                    alertOverlay.style.display = lastAlertActive ? 'block' : 'none';
+                    confFill.style.background = phoneVisible ? 'var(--alert-color)' : 'var(--accent-color)';
+                    alertOverlay.style.display = phoneVisible ? 'block' : 'none';
 
-                    if (lastAlertActive) {
+                    if (phoneVisible) {
                         addAlertToList(result.timestamp, conf);
                     }
                 } catch (err) {

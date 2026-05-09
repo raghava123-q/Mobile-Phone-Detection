@@ -39,13 +39,13 @@ PHONE_CLASS_NAME = "cell phone"
 # DETECTION PARAMETERS
 # ==============================================================
 # Minimum confidence score to consider a detection valid
-CONFIDENCE_THRESHOLD = 0.40
+CONFIDENCE_THRESHOLD = 0.25
 
 # IoU threshold for Non-Maximum Suppression
 NMS_IOU_THRESHOLD = 0.45
 
 # Input image size for YOLO inference (pixels)
-INPUT_SIZE = 640
+INPUT_SIZE = 416
 
 # Maximum number of detections per frame
 MAX_DETECTIONS = 10
@@ -54,19 +54,19 @@ MAX_DETECTIONS = 10
 # PERSISTENCE TRACKING CONFIGURATION
 # ==============================================================
 # Number of consecutive frames a phone must appear before triggering alert
-PERSISTENCE_THRESHOLD = 5
+PERSISTENCE_THRESHOLD = 2
 
 # Maximum frames a tracked object can be missing before removal
 MAX_MISSING_FRAMES = 10
 
 # IoU threshold for matching detections across frames
-TRACKING_IOU_THRESHOLD = 0.3
+TRACKING_IOU_THRESHOLD = 0.15
 
 # ==============================================================
 # FALSE POSITIVE REDUCTION
 # ==============================================================
 # Minimum bounding box area (pixels²) to filter tiny detections
-MIN_BBOX_AREA = 1500
+MIN_BBOX_AREA = 800
 
 # Maximum bounding box area ratio (relative to frame)
 MAX_BBOX_AREA_RATIO = 0.5
@@ -86,7 +86,7 @@ CONFIDENCE_WINDOW_SIZE = 10
 ALERT_COOLDOWN_SECONDS = 5.0
 
 # Minimum average confidence to trigger alert
-ALERT_MIN_AVG_CONFIDENCE = 0.45
+ALERT_MIN_AVG_CONFIDENCE = 0.35
 
 # ==============================================================
 # VISUALIZATION SETTINGS

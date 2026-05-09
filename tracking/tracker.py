@@ -323,13 +323,21 @@ class PersistenceTracker:
         """
         now = time.time()
         cooldown_ok = (now - self.last_alert_time) >= ALERT_COOLDOWN_SECONDS
+        any_alert = False
 
         for track in self.tracks:
             if not track.is_active:
                 continue
+
+            # Reset alert_triggered after cooldown so it can re-trigger
+            if track.alert_triggered and cooldown_ok:
+                track.alert_triggered = False
+
             if track.should_alert():
+                any_alert = True  # Keep alert banner visible
+
                 if cooldown_ok and not track.alert_triggered:
-                    # New alert
+                    # Log a new alert event
                     self.alert_count += 1
                     self.last_alert_time = now
                     track.alert_triggered = True
@@ -347,9 +355,7 @@ class PersistenceTracker:
                         "avg_confidence": track.get_avg_confidence(),
                     })
 
-                return True  # Alert is active regardless of cooldown
-
-        return False
+        return any_alert
 
     def _build_enriched_detections(self) -> List[Dict]:
         """
